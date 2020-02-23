@@ -1,24 +1,32 @@
 package metier;
 
+import outils.Labyrinthe;
+
 import java.util.*;
 
 public class PyRat {
 
+    private int labyWidth;
+    private int labyHeight;
     private List<Point> fromages; //Liste de base des fromages
-    private Set<Point> fromagesSet; //Liste des fromages sous form de Hash Set
     private Map<Point, List<Point>> labyrinth; //Hash Map => Labyrinth
+    private Set<Point> fromagesSet; //Liste des fromages sous form de Hash Set
+    private Map<Point, Set<Point>> labyrinthSet; //Hash Map => Labyrinth
 
 
     /* Méthode appelée une seule fois permettant d'effectuer des traitements "lourds" afin d'augmenter la performace de la méthode turn. */
     public void preprocessing(Map<Point, List<Point>> laby, int labyWidth, int labyHeight, Point position, List<Point> fromages) {
+        this.labyWidth = labyWidth;
+        this.labyHeight = labyHeight;
         this.fromages = fromages;
         this.labyrinth = laby;
-
-        this.fromagesSet = new HashSet<Point>(fromages);
-        //this.fromagesSet = new HashSet<>(); //Initialisation
+        this.fromagesSet = new HashSet<Point>(fromages); //Création de la copie sous forme de HashSet
         //for(Point frm: fromages){this.fromagesSet.add(frm);}
-        //this.fromagesSet.addAll(fromages); //Permet la copie sous forme de Hash Set
-        System.out.println(fromagesSet);
+        this.labyrinthSet = new HashMap<>(); //Création de la copie du Labyrinth sous forme de HashMap
+        for(Point key: labyrinth.keySet()){ //Boucle dans le Labyrinth
+            Set<Point> values = new HashSet<>(laby.get(key)); //Création d'un Set contenant les clés
+            labyrinthSet.put(key, values); //On ajoute le Set dans le nouveau Labyrinth sous forme de HashMap avec un Set
+        }
     }
 
     /* Méthode de test appelant les différentes fonctionnalités à développer.
@@ -39,19 +47,22 @@ public class PyRat {
     /* Regarde dans la liste des fromages s’il y a un fromage à la position pos.
         @return true s'il y a un fromage à la position pos, false sinon. */
     private boolean fromageIci(Point pos) {
-        return this.fromages.contains(pos); //Effectue une boucle
+        return this.fromages.contains(pos); //Effectue une boucle en utilisant le equals
     }
 
     /* Regarde de manière performante (accès en ordre constant) s’il y a un fromage à la position pos.
         @return true s'il y a un fromage à la position pos, false sinon. */
     private boolean fromageIci_EnOrdreConstant(Point pos) {
-        return this.fromagesSet.contains(pos); //Sous forme de HashSet le contains n'effectue pas de boucle
+        return this.fromagesSet.contains(pos); //Sous forme de HashSet le contains n'effectue pas de boucle, une fonction hashCode est implémenté dans Point
     }
 
     /* Indique si le joueur peut passer de la position (du Point) « de » au point « a ».
         @return true s'il y a un passage depuis  « de » vers « a ». */
     private boolean passagePossible(Point de, Point a) {
-
+        if(labyrinth.containsKey(de)){ //Si le labyrith possède la clé "de"
+            List<Point> p = labyrinth.get(de); //On get la position De
+            return p.contains(a); //On vérifie s'il est relié à la position "a"
+        }
         return false;
     }
 
@@ -59,19 +70,25 @@ public class PyRat {
         mais sans devoir parcourir la liste des Points se trouvant dans la Map !
         @return true s'il y a un passage depuis  « de » vers « a ». */
     private boolean passagePossible_EnOrdreConstant(Point de, Point a) {
-
+        if(this.labyrinthSet.containsKey(de)){ //Si le labyrith possède la clé "de"
+            Set<Point> p = labyrinthSet.get(de); //On get la position De
+            return p.contains(a); //On vérifie s'il est relié à la position "a"
+        }
         return false;
     }
 
     /* Retourne la liste des points qui ne peuvent pas être atteints depuis la position « pos ».
         @return la liste des points qui ne peuvent pas être atteints depuis la position « pos ». */
     private List<Point> pointsInatteignables(Point pos) {
-        //"de" est une clé c'est pourquoi on utilise containsKey
-        //Si le laby contient la position
-        if (labyrinth.containsKey(pos)){
-            List<Point> point  = labyrinth.get(pos); //On stock la position sous forme de HashSet
-            return point;
+        List<Point> pointsInatteignable = new ArrayList<>(); //List
+        //Boucle Labyrithn
+        for(Point key: labyrinthSet.keySet()){
+            //System.out.println(key); //Clé
+            //System.out.println(labyrinthSet.get(key)); //Valeur
+            if (!key.equals(pos)){ //Si la clé ne correspond pas on ajoute à la liste
+                pointsInatteignable.addAll(labyrinthSet.get(key));
+            }
         }
-        return null;
+        return pointsInatteignable;
     }
 }
